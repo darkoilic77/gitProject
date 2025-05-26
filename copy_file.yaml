@@ -3,9 +3,9 @@
   hosts: all
   tasks:
   - name: Copy file with owner and permissions
-    command: ansible.builtin.copy
-      src: /tmp/test.txt
-      dest: /tmp/copytest.txt
-      owner: root
-      group: root
-      mode: '0644'
+      ansible.builtin.copy:
+        src: /tmp/test.txt
+        dest: /tmp/copytest.txt
+        owner: root
+        group: root
+        mode: '0644'
