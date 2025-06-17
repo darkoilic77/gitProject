@@ -1,6 +1,5 @@
 ---
 - name: Restart WebSphere Application Server on bawcapiwsraz
-  hosts: bawcapiwsraz
   become: yes
   gather_facts: no
 
