@@ -25,10 +25,34 @@
         var: was_stop_output.stdout_lines
       when: was_stop_output is defined
 
-    - name: Wait for WAS shutdown
+    - name: Wait for WAS shutdown (check every 10s for up to 120s)
+      ansible.builtin.wait_for:
+        path: /proc/$(ps -ef | grep java | grep -v grep | awk '{ print $2 }' | head -n1)
+        state: absent
+        timeout: 60
+        sleep: 10
+      register: was_wait_result
+      failed_when: false
+      when: was_stop_output is defined
+
+    - name: Kill remaining Java processes if still running
+      ansible.builtin.shell: |
+        for pid in $(ps -ef | grep java | grep -v grep | awk '{ print $2 }'); do
+          echo "Killing process $pid"
+          kill -9 $pid
+        done
+      when: was_wait_result is defined and was_wait_result.state != "absent"
+      register: kill_result
+
+    - name: Show killed process info
+      ansible.builtin.debug:
+        var: kill_result.stdout_lines
+      when: kill_result is defined
+
+    - name: Wait a few seconds after force kill
       ansible.builtin.pause:
         seconds: 10
-      when: was_stop_output is defined
+      when: kill_result is defined
 
     - name: Confirm no Java processes are listening on 9443 or 9080
       ansible.builtin.shell: |
