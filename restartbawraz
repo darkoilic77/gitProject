@@ -1,0 +1,72 @@
+---
+- name: Restart WebSphere Application Server on bawcapiwsraz
+  hosts: bawcapiwsraz
+  become: yes
+  gather_facts: no
+
+  tasks:
+
+    - name: Check if Java is currently listening on ports 9443 or 9080
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_before
+
+    - name: Print current port usage
+      ansible.builtin.debug:
+        var: java_ports_before.stdout_lines
+
+    - name: Stop WAS if it is currently running
+      ansible.builtin.shell: /etc/init.d/noderaz_was.init stop
+      when: java_ports_before.stdout.find(':9443') != -1 or java_ports_before.stdout.find(':9080') != -1
+      register: was_stop_output
+
+    - name: Show WAS stop output
+      ansible.builtin.debug:
+        var: was_stop_output.stdout_lines
+      when: was_stop_output is defined
+
+    - name: Wait for WAS shutdown
+      ansible.builtin.pause:
+        seconds: 10
+      when: was_stop_output is defined
+
+    - name: Confirm no Java processes are listening on 9443 or 9080
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_after_stop
+
+    - name: Fail if ports are still in use after shutdown
+      ansible.builtin.fail:
+        msg: "Ports 9443 or 9080 are still in use after shutdown. Cannot safely restart WAS."
+      when: java_ports_after_stop.stdout.find(':9443') != -1 or java_ports_after_stop.stdout.find(':9080') != -1
+
+    - name: Start WebSphere Application Server
+      ansible.builtin.shell: /etc/init.d/noderaz_was.init start
+      register: was_start_output
+
+    - name: Show WAS start output
+      ansible.builtin.debug:
+        var: was_start_output.stdout_lines
+
+    - name: Wait for WAS to initialize
+      ansible.builtin.pause:
+        seconds: 20
+
+    - name: Verify WAS has started (Java listening on 9443 and 9080)
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_after_start
+
+    - name: Fail if Java is not listening on both ports after start
+      ansible.builtin.fail:
+        msg: "WAS failed to start — Java is not listening on both 9443 and 9080."
+      when: java_ports_after_start.stdout.find(':9443') == -1 or java_ports_after_start.stdout.find(':9080') == -1
+
+    - name: Confirm Java processes
+      ansible.builtin.shell: ps -ef | grep java | grep -v grep | wc
+      register: java_process_count
+
+    - name: Print Java process count
+      ansible.builtin.debug:
+        var: java_process_count.stdout_lines
+
