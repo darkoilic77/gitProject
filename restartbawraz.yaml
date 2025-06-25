@@ -45,7 +45,10 @@
         pids=$(pgrep -f java)
         if [ -n "$pids" ]; then
           echo "Killing: $pids"
-          kill -9 $pids
+          for pid in $pids; do
+            echo "Killing $pid"
+            kill -9 $pid || true
+          done
         else
           echo "No Java processes left"
         fi
@@ -53,6 +56,7 @@
       register: kill_result
       ignore_errors: yes  # Optional if you're debugging further
 
+  
     - name: Show killed process info
       ansible.builtin.debug:
         var: kill_result.stdout_lines
