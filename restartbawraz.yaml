@@ -26,24 +26,32 @@
         var: was_stop_output.stdout_lines
       when: was_stop_output is defined
 
-    - name: Wait for Java processes to terminate (check every 10s for up to 60s)
+    - name: Wait up to 60s for Java processes to stop
       ansible.builtin.shell: |
-        sleep 10
-        pgrep -f java || echo "stopped"
-      register: java_check
-      retries: 6
-      delay: 10
-      until: java_check.stdout.find("stopped") != -1
+        for i in {1..6}; do
+          if ! pgrep -f java > /dev/null; then
+            echo "All Java processes stopped"
+            exit 0
+          fi
+          sleep 10
+        done
+        echo "Java processes still running"
+        exit 1
+      register: wait_for_java_shutdown
       ignore_errors: yes
 
     - name: Kill remaining Java processes if still running
       ansible.builtin.shell: |
-        for pid in $(pgrep -f java); do
-          echo "Killing process $pid"
-          kill -9 $pid
-        done
-      when: java_check.stdout.find("stopped") == -1
+        pids=$(pgrep -f java)
+        if [ -n "$pids" ]; then
+          echo "Killing: $pids"
+          kill -9 $pids
+        else
+          echo "No Java processes left"
+        fi
+      when: wait_for_java_shutdown.rc != 0
       register: kill_result
+      ignore_errors: yes  # Optional if you're debugging further
 
     - name: Show killed process info
       ansible.builtin.debug:
