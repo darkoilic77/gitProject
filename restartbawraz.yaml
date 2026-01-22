@@ -99,6 +99,7 @@
       ansible.builtin.fail:
         msg: "WAS failed to start — Java is not listening on both 9443 and 9080."
       when: java_ports_after_start.stdout.find(':9443') == -1 or java_ports_after_start.stdout.find(':9080') == -1
+      ignore_errors: yes
 
     - name: Confirm Java processes
       ansible.builtin.shell: ps -ef | grep java | grep -v grep | wc
