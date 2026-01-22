@@ -30,13 +30,13 @@
       ansible.builtin.pause:
         seconds: 40
         
-	- name: Kill remaining Java processes if still running
-	  ansible.builtin.shell: |
-		for pid in $(ps -ef | grep java | grep -v instana | grep -v grep | awk '{ print $2 }'); do
-		  echo "Killing process $pid"
-		  kill -9 $pid
-		done
-	  register: kill_result
+    - name: Kill remaining Java processes if still running
+      ansible.builtin.shell: |
+        for pid in $(ps -ef | grep java | grep -v instana | grep -v grep | awk '{ print $2 }'); do
+          echo "Killing process $pid"
+          kill -9 $pid
+        done
+      register: kill_result
   
     - name: Show killed process info
       ansible.builtin.debug:
