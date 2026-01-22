@@ -59,7 +59,7 @@
       when: java_ports_after_stop.stdout.find(':9443') != -1 or java_ports_after_stop.stdout.find(':9080') != -1
 
     - name: Start WebSphere Application Server
-      ansible.builtin.shell: timeout 30 /etc/init.d/noderaz_was.init start
+      ansible.builtin.shell: /etc/init.d/noderaz_was.init start
       register: was_start_output
       ignore_errors: yes
 
