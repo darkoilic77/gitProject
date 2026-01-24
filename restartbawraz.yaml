@@ -83,12 +83,15 @@
       ansible.builtin.shell: |
         for i in {1..9}; do
           if ! lsof -i -P -n 2>/dev/null | grep java | grep -E ':(9443|9080)' > /dev/null; then
-            echo "Java processes with ports 9443/9080 stopped"
-            exit 0
+          # if lsof -i -P -n 2>/dev/null | grep java | grep -E ':(9443|9080)' > /dev/null; then
+            echo "No java processes with ports 9443/9080"
+            sleep 20
           fi
+            echo "There is java process with ports 9443/9080 "
+            exit 0
           sleep 20
         done
-        echo "Java processes with ports 9443/9080 still running"
+        echo "No Java processes with ports 9443/9080 still running"
         exit 1
         ignore_errors: yes
 
