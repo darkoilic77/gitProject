@@ -28,7 +28,7 @@
 
     - name: Wait for WAS to stopping
       ansible.builtin.pause:
-        seconds: 40
+        seconds: 20
         
     - name: Kill remaining Java processes if still running
       ansible.builtin.shell: |
@@ -92,3 +92,11 @@
         exit 1
         ignore_errors: yes
 
+    - name: Confirm Java processes are listening on 9443 or 9080
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_after_start
+
+    - name: Ports are in use after starting
+      ansible.builtin.debug:
+        var: java_ports_after_start
