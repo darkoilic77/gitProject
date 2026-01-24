@@ -79,12 +79,16 @@
       ansible.builtin.debug:
         var: java_process_count.stdout_lines
 
-    - name: Wait up to 225s for WAS ports to be released
+    - name: Wait up to 180s 3min for Java processes to stop
       ansible.builtin.shell: |
-        lsof -i -P -n | grep java | grep -E ':(9443|9080)'
-      register: port_check
-      until: port_check.stdout == ""
-      retries: 15        # 8 × 20s = 160s
-      delay: 15
-      changed_when: true
+        for i in {1..9}; do
+          if ! lsof -i -P -n 2>/dev/null | grep java | grep -E ':(9443|9080)' > /dev/null; then
+            echo "Java processes with ports 9443/9080 stopped"
+            exit 0
+          fi
+          sleep 20
+        done
+        echo "Java processes with ports 9443/9080 still running"
+        exit 1
+        ignore_errors: yes
 
