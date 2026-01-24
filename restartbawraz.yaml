@@ -80,9 +80,9 @@
         var: java_process_count.stdout_lines
 
 
-    - name: Wait up to 180s 3min for Java processes to have those ports 9443|9080
+    - name: Wait up to 220 3min for Java processes to have those ports 9443|9080
       ansible.builtin.shell: |
-        for i in {1..9}; do
+        for i in {1..11}; do
           if lsof -i -P -n 2>/dev/null | grep java | grep -E ':(9443|9080)' > /dev/null; then
             echo "There is java process with ports 9443/9080 "
             exit 0
@@ -94,12 +94,6 @@
         echo "No Java processes with ports 9443/9080 still running"
         exit 1
         ignore_errors: yes
-      register: waiting_ports
-
-
-    - name: check process while waiting 
-      ansible.builtin.debug:
-        var: waiting_ports.stdout_lines
   
     - name: Confirm Java processes are listening on 9443 or 9080
       ansible.builtin.shell: |
