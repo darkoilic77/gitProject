@@ -95,7 +95,7 @@
         register: waiting_ports
         exit 1
         ignore_errors: yes
-		
+
     - name: check process while waiting 
       ansible.builtin.debug:
         var: waiting_ports.stdout_lines
