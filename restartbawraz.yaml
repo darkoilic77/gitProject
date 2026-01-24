@@ -83,7 +83,6 @@
       ansible.builtin.shell: |
         for i in {1..9}; do
           if ! lsof -i -P -n 2>/dev/null | grep java | grep -E ':(9443|9080)' > /dev/null; then
-          # if lsof -i -P -n 2>/dev/null | grep java | grep -E ':(9443|9080)' > /dev/null; then
             echo "No java processes with ports 9443/9080"
             sleep 20
           fi
