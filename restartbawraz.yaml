@@ -71,17 +71,6 @@
       ansible.builtin.pause:
         seconds: 20
 
-    - name: Verify WAS has started (Java listening on 9443 and 9080)
-      ansible.builtin.shell: |
-        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
-      register: java_ports_after_start
-
-    - name: Fail if Java is not listening on both ports after start
-      ansible.builtin.fail:
-        msg: "WAS failed to start — Java is not listening on both 9443 and 9080."
-      when: java_ports_after_start.stdout.find(':9443') == -1 or java_ports_after_start.stdout.find(':9080') == -1
-      ignore_errors: yes
-
     - name: Confirm Java processes
       ansible.builtin.shell: ps -ef | grep java | grep -v grep | wc
       register: java_process_count
@@ -89,4 +78,13 @@
     - name: Print Java process count
       ansible.builtin.debug:
         var: java_process_count.stdout_lines
+
+    - name: Wait up to 225s for WAS ports to be released
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)'
+      register: port_check
+      until: port_check.stdout == ""
+      retries: 15        # 8 × 20s = 160s
+      delay: 15
+      changed_when: true
 
