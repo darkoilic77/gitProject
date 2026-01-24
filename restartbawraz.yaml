@@ -93,8 +93,9 @@
         done
         echo "No Java processes with ports 9443/9080 still running"
         exit 1
+        ignore_errors: yes
       register: waiting_ports
-      ignore_errors: yes
+
 
     - name: check process while waiting 
       ansible.builtin.debug:
