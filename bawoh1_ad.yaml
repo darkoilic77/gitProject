@@ -1,0 +1,103 @@
+---
+- name: Restart WebSphere Application Server on kabawohws1qa
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+
+    - name: Check if Java is currently listening on ports 9443 or 9080
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_before
+
+    - name: Print current port usage
+      ansible.builtin.debug:
+        var: java_ports_before.stdout_lines
+
+    - name: Stop WAS if it is currently running
+      ansible.builtin.shell: /etc/init.d/node1_was.init stop
+      when: java_ports_before.stdout.find(':9443') != -1 or java_ports_before.stdout.find(':9080') != -1
+      register: was_stop_output
+      ignore_errors: yes
+
+    - name: Show WAS stop output
+      ansible.builtin.debug:
+        var: was_stop_output.stdout_lines
+      when: was_stop_output is defined
+
+    - name: Wait for WAS to stopping
+      ansible.builtin.pause:
+        seconds: 20
+        
+    - name: Kill remaining Java processes if still running
+      ansible.builtin.shell: |
+        for pid in $(ps -ef | grep java | grep -v instana | grep -v grep | awk '{ print $2 }'); do
+          echo "Killing process $pid"
+          kill -9 $pid
+        done
+      register: kill_result
+  
+    - name: Show killed process info
+      ansible.builtin.debug:
+        var: kill_result.stdout_lines
+      when: kill_result is defined
+
+    - name: Wait a few seconds after force kill
+      ansible.builtin.pause:
+        seconds: 10
+      when: kill_result is defined
+
+    - name: Confirm no Java processes are listening on 9443 or 9080
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_after_stop
+
+    - name: Fail if ports are still in use after shutdown
+      ansible.builtin.fail:
+        msg: "Ports 9443 or 9080 are still in use after shutdown. Cannot safely restart WAS."
+      when: java_ports_after_stop.stdout.find(':9443') != -1 or java_ports_after_stop.stdout.find(':9080') != -1
+
+    - name: Start WebSphere Application Server
+      ansible.builtin.shell: /etc/init.d/node1_was.init start
+      register: was_start_output
+      ignore_errors: yes
+
+    - name: Show WAS start output
+      ansible.builtin.debug:
+        var: was_start_output.stdout_lines
+
+    - name: Wait for WAS to initialize
+      ansible.builtin.pause:
+        seconds: 20
+
+    - name: Confirm Java processes
+      ansible.builtin.shell: ps -ef | grep java | grep -v grep | wc
+      register: java_process_count
+
+    - name: Print Java process count
+      ansible.builtin.debug:
+        var: java_process_count.stdout_lines
+
+    - name: Wait up to 220s for WAS ports to appear
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)'
+      register: port_check
+      until: port_check.rc == 0
+      retries: 11
+      delay: 20
+      changed_when: false
+  
+    - name: Confirm Java processes are listening on 9443 or 9080
+      ansible.builtin.shell: |
+        lsof -i -P -n | grep java | grep -E ':(9443|9080)' || true
+      register: java_ports_after_start
+
+    - name: Ports are in use after starting
+      ansible.builtin.debug:
+        var: java_ports_after_start.stdout_lines
+
+    - name: Wait for WAS APP server to initialize 4min
+      ansible.builtin.pause:
+        seconds: 240
+        
