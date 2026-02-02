@@ -16,7 +16,7 @@
         var: java_ports_before.stdout_lines
 
     - name: Stop WAS if it is currently running
-      ansible.builtin.shell: /etc/init.d/noderaz_was.init stop
+      ansible.builtin.shell: /etc/init.d/noderaz_was1.init stop
       when: java_ports_before.stdout.find(':9443') != -1 or java_ports_before.stdout.find(':9080') != -1
       register: was_stop_output
       ignore_errors: yes
