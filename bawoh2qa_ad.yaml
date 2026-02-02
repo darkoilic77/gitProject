@@ -26,6 +26,11 @@
         var: was_stop_output.stdout_lines
       when: was_stop_output is defined
 
+    - name: Show WAS stop error output
+      ansible.builtin.debug:
+        var: was_stop_output.stderr_lines
+      when: was_stop_output is defined
+
     - name: Wait for WAS to stopping
       ansible.builtin.pause:
         seconds: 20
@@ -67,6 +72,11 @@
       ansible.builtin.debug:
         var: was_start_output.stdout_lines
 
+    - name: Show WAS start error output
+      ansible.builtin.debug:
+        var: was_start_output.stderr_lines
+      when: was_start_output is defined
+
     - name: Wait for WAS to initialize
       ansible.builtin.pause:
         seconds: 20
@@ -97,6 +107,6 @@
       ansible.builtin.debug:
         var: java_ports_after_start.stdout_lines
 
-    - name: Wait for WAS APP server to initialize 3min
+    - name: Wait for WAS APP server to initialize 3.5min
       ansible.builtin.pause:
-        seconds: 180
+        seconds: 210
