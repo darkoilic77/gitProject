@@ -107,7 +107,7 @@
       ansible.builtin.debug:
         var: java_ports_after_start.stdout_lines
 
-    - name: Wait for WAS APP server to initialize 3min
+    - name: Wait for WAS APP server to initialize 3.5min
       ansible.builtin.pause:
-        seconds: 180
+        seconds: 210
         
