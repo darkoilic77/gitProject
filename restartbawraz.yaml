@@ -72,6 +72,11 @@
       ansible.builtin.debug:
         var: was_start_output.stdout_lines
 
+    - name: Show WAS start error output
+      ansible.builtin.debug:
+        var: was_start_output.stderr_lines
+      when: was_start_output is defined
+
     - name: Wait for WAS to initialize
       ansible.builtin.pause:
         seconds: 20
